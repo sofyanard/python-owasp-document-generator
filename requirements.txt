@@ -1,6 +1,1 @@
 python-docx
-requests
-# FPDF
-types-requests
-aiohttp
-asyncio
