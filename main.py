@@ -67,8 +67,8 @@ def generate_report(data):
                 i+=1   
     doc1.add_page_break()
     
-    merge_and_save_docx(doc1, doc2, report_dir + "Depedency scan "+ArtifactName+".docx")
-    doc_dir = report_dir + "Depedency scan "+ArtifactName+".docx"
+    merge_and_save_docx(doc1, doc2, report_dir + "OWASP scan "+ArtifactName+".docx")
+    doc_dir = report_dir + "OWASP scan "+ArtifactName+".docx"
     
     if failed:
         print("All failed task stored in " + failed_data_dir + "Failed Append "+ArtifactName+".json")
