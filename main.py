@@ -35,6 +35,8 @@ def get_files(filename):
         pass
     
 def generate_report(data):
+    ordered_severity = categorize_severity(data["dependencies"])
+
     doc_template_open_name = "./data/doc_template/Reporting-SAKTI-opening-template.docx"
     doc1= load_doc(doc_template_open_name)
     doc_template_close_name = "./data/doc_template/Reporting-SAKTI-closing-template.docx"
@@ -45,26 +47,30 @@ def generate_report(data):
     failed_data_dir = base_data_dir + 'failed/'
     ArtifactName= data["projectInfo"]["name"]
     replace_text_in_docx(doc1, "@%APP%@", ArtifactName)
-    dependencies = data["dependencies"]
+    
     failed=[]
+    header2=[]
 
     start = time.time()
-    for dependency in dependencies:
+    i = 1
+    for severity_key, severity_data in ordered_severity.items():
+        if severity_key not in header2:
+            add_header(severity_key, doc1, 2)
+            header2.append(severity_key)
+        
+        for item in severity_data:
+            add_header(item["fileName"], doc1, 3)
+            
+            # for debugging purpose
+            # print(f'- fileName = {item["fileName"]}')
+            # print(f'- source = {item["source"]}')
+            # print(f'- name = {truncate_text(item["name"], 100, True)}')
+            # print(f'- severity = {item["severity"]}')
+            
+            if insert_to_doc(item, doc1, i, ArtifactName) == False:
+                failed.append(item)
+            i+=1  
 
-        if "vulnerabilities" in dependency:
-            print("- fileName = " + dependency["fileName"])
-            vulnerabilities = dependency["vulnerabilities"]
-            add_header(dependency["fileName"], doc1, 3)
-
-            i = 1
-            for vulnerability in vulnerabilities:
-                print("- - source: " + vulnerability["source"])
-                print("- - name: " + truncate_text(vulnerability["name"], 100, True))
-                print("- - severity: " + vulnerability["severity"])
-
-                if insert_to_doc(vulnerability, doc1, i, ArtifactName) == False:
-                    failed.append(vulnerability)
-                i+=1   
     doc1.add_page_break()
     
     merge_and_save_docx(doc1, doc2, report_dir + "OWASP scan "+ArtifactName+".docx")
@@ -76,6 +82,27 @@ def generate_report(data):
         write_json_file(failed, failed_data_dir + "Failed Append "+ArtifactName+".json")
     else:
         return doc_dir + " is generated successfully in " + str(time.time()-start)
+
+def categorize_severity(data):
+    categorized_data = {
+        "CRITICAL":[],
+        "HIGH":[],
+        "MEDIUM":[],
+        "LOW":[],
+    }
+    
+    # Categorize dependencies based on their severity vulnerability
+    try:
+        for dependency in data:
+            if "vulnerabilities" in dependency:
+                for severity in dependency["vulnerabilities"]:
+                    if "severity" in severity:
+                        severity["fileName"] = dependency["fileName"]
+                        categorized_data[severity["severity"].upper()].append(severity)
+        return categorized_data
+    except Exception as err:
+        print(f'Error in order_severity: {err}')
+        print(f'Depedency data: {severity}')
 
 def truncate_text(text, max_length, ellipsis=True):
     if len(text) > max_length:
